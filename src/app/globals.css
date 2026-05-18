@@ -80,18 +80,19 @@ button {
   background: linear-gradient(145deg, rgba(18, 20, 33, 0.72), rgba(10, 10, 15, 0.56));
   border: 1px solid var(--line);
   border-radius: 8px;
-  bottom: 18px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.38), 0 0 48px rgba(0, 240, 255, 0.08);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  height: calc(100dvh - 36px);
   left: 18px;
-  max-height: min(560px, calc(100dvh - 36px));
+  max-height: calc(100dvh - 36px);
   min-height: 320px;
   min-width: min(300px, calc(100vw - 20px));
   overflow: auto;
   padding: 14px 14px 34px;
   position: absolute;
+  top: 18px;
   width: min(390px, calc(100vw - 28px));
   z-index: 4;
 }
@@ -121,6 +122,27 @@ button {
 
 .panel-drag-handle:active {
   cursor: grabbing;
+}
+
+.panel-grab-zone {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.052);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: rgba(244, 251, 255, 0.58);
+  display: flex;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  gap: 8px;
+  justify-content: center;
+  min-height: 34px;
+  text-transform: uppercase;
+}
+
+.panel-grab-zone:hover {
+  background: rgba(0, 240, 255, 0.08);
+  border-color: rgba(0, 240, 255, 0.28);
+  color: rgba(244, 251, 255, 0.82);
 }
 
 .zoom-toolbar {
@@ -452,66 +474,39 @@ input[type="range"] {
   margin: 0;
 }
 
-.webcam-video {
-  border: 1px solid rgba(0, 240, 255, 0.58);
-  border-radius: 8px;
-  box-shadow: 0 0 28px rgba(0, 240, 255, 0.16);
-  height: 190px;
-  object-fit: cover;
-  position: absolute;
-  right: 18px;
-  top: 18px;
-  transform: scaleX(-1);
-  width: 254px;
-  z-index: 3;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.webcam-video.is-active {
-  opacity: 1;
-}
-
-.webcam-guide {
-  background: linear-gradient(180deg, rgba(0, 240, 255, 0.16), rgba(10, 10, 15, 0.62));
-  border: 1px solid rgba(0, 240, 255, 0.36);
-  border-radius: 8px;
-  color: rgba(244, 251, 255, 0.82);
-  display: grid;
-  gap: 3px;
-  padding: 9px 11px;
-  position: absolute;
-  right: 18px;
-  top: 218px;
-  width: 254px;
-  z-index: 3;
-}
-
-.webcam-guide span {
-  color: var(--cyan);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-}
-
-.webcam-guide b {
-  font-size: 12px;
-  line-height: 1.35;
-}
-
 .corner-brand {
-  color: rgba(255, 255, 255, 0.42);
+  align-items: center;
+  backdrop-filter: blur(16px);
+  background: rgba(10, 10, 15, 0.74);
+  border: 1px solid rgba(0, 240, 255, 0.42);
+  border-radius: 8px;
+  box-shadow: 0 0 26px rgba(0, 240, 255, 0.12), 0 14px 36px rgba(0, 0, 0, 0.28);
+  color: rgba(244, 251, 255, 0.86);
+  display: inline-flex;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
+  gap: 8px;
   position: absolute;
   right: 18px;
   bottom: 18px;
   text-decoration: none;
-  z-index: 2;
+  padding: 10px 12px;
+  z-index: 4;
+}
+
+.corner-brand b {
+  color: var(--cyan);
+  font-weight: 800;
+}
+
+.corner-brand span {
+  color: rgba(244, 251, 255, 0.62);
 }
 
 .corner-brand:hover {
-  color: var(--cyan);
+  border-color: rgba(255, 45, 123, 0.58);
+  color: var(--text);
+  transform: translateY(-1px);
 }
 
 .fact-box {
@@ -633,11 +628,12 @@ input[type="range"] {
 
 @media (max-width: 760px) {
   .control-panel {
-    bottom: 10px;
+    height: calc(100dvh - 20px);
     left: 10px;
-    max-height: 52dvh;
+    max-height: calc(100dvh - 20px);
     min-height: 280px;
     padding: 12px 12px 34px;
+    top: 10px;
     width: calc(100vw - 20px);
   }
 
@@ -654,11 +650,20 @@ input[type="range"] {
     overflow-x: auto;
   }
 
-  .webcam-video,
-  .webcam-guide,
-  .corner-brand,
   .fact-box,
   .teach-board {
+    display: none;
+  }
+
+  .corner-brand {
+    bottom: 12px;
+    font-size: 11px;
+    padding: 8px 10px;
+    right: 12px;
+    z-index: 6;
+  }
+
+  .corner-brand span {
     display: none;
   }
 }

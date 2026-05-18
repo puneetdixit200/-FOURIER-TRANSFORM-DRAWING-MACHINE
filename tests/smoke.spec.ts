@@ -22,13 +22,17 @@ test("home page renders canvas UI and switches core modes", async ({ page }) => 
   await expect(page.getByText("Math fact")).toBeVisible();
   const factBox = await page.locator(".fact-box").boundingBox();
   expect(factBox?.height).toBeGreaterThan(90);
-  await expect(page.getByRole("link", { name: "Made by puneetdixit200" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "GitHub puneetdixit200" })).toHaveAttribute(
     "href",
     "https://github.com/puneetdixit200",
   );
+  await expect(page.getByText("Webcam trace")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Battle" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Two Together" })).toBeVisible();
 
   const panelBefore = await page.locator(".control-panel").boundingBox();
-  const handle = await page.locator(".panel-drag-handle").boundingBox();
+  expect(panelBefore?.height).toBeGreaterThan(680);
+  const handle = await page.locator(".panel-grab-zone").boundingBox();
   expect(panelBefore).not.toBeNull();
   expect(handle).not.toBeNull();
   if (panelBefore && handle) {
@@ -47,11 +51,11 @@ test("home page renders canvas UI and switches core modes", async ({ page }) => 
   if (panelBeforeResize && resizeHandle) {
     await page.mouse.move(resizeHandle.x + resizeHandle.width / 2, resizeHandle.y + resizeHandle.height / 2);
     await page.mouse.down();
-    await page.mouse.move(resizeHandle.x + 130, resizeHandle.y + 90, { steps: 8 });
+    await page.mouse.move(resizeHandle.x + 130, resizeHandle.y - 90, { steps: 8 });
     await page.mouse.up();
     const panelAfterResize = await page.locator(".control-panel").boundingBox();
     expect(panelAfterResize?.width).toBeGreaterThan(panelBeforeResize.width + 60);
-    expect(panelAfterResize?.height).toBeGreaterThan(panelBeforeResize.height + 40);
+    expect(panelAfterResize?.height).toBeLessThan(panelBeforeResize.height - 40);
   }
 
   await page.getByRole("button", { name: "Dual-axis" }).click();

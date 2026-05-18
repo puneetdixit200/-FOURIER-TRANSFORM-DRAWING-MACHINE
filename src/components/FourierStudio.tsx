@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Code2 } from "lucide-react";
 import { ControlPanel, type RenderMode } from "./ControlPanel";
 import { DrawingCanvas } from "./DrawingCanvas";
 import { drawingDifficulty, prepareDrawing, type PreparedDrawing } from "./FourierEngine";
@@ -13,7 +14,6 @@ import { factForElapsedTime } from "@/utils/facts";
 import { getPreset } from "@/utils/presets";
 import { clampRecordingDuration, createGifFramePlan } from "@/utils/recording";
 import { extractSvgPathData, sampleSvgPath } from "@/utils/svgPath";
-import { extractEdgeTrace } from "@/utils/webcamTrace";
 import { clampZoom, stepZoom } from "@/utils/zoom";
 
 type BattleEntry = {
@@ -65,8 +65,6 @@ export function FourierStudio() {
 function FourierStudioClient() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const activeCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const webcamStreamRef = useRef<MediaStream | null>(null);
   const initializedRef = useRef(false);
   const startTimeRef = useRef<number | null>(null);
 
@@ -86,8 +84,6 @@ function FourierStudioClient() {
   const [epicycleCount, setEpicycleCount] = useState(160);
   const [resetToken, setResetToken] = useState(0);
   const [svgText, setSvgText] = useState("");
-  const [webcamActive, setWebcamActive] = useState(false);
-  const [webcamStatus, setWebcamStatus] = useState("Start camera, then capture a high-contrast outline.");
   const [recording, setRecording] = useState(false);
   const [recordingDurationSeconds, setRecordingDurationSeconds] = useState(6);
   const [battle, setBattle] = useState<{ a?: BattleEntry; b?: BattleEntry }>({});
@@ -182,76 +178,13 @@ function FourierStudioClient() {
     }
   };
 
-  const startWebcam = async () => {
-    if (webcamStreamRef.current) {
-      webcamStreamRef.current.getTracks().forEach((track) => track.stop());
-      webcamStreamRef.current = null;
-      setWebcamActive(false);
-      setWebcamStatus("Camera stopped.");
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: "user",
-        },
-        audio: false,
-      });
-      webcamStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      setWebcamActive(true);
-      setWebcamStatus("Camera live. Use bright lighting, then capture.");
-    } catch {
-      setWebcamStatus("Camera permission failed or no camera was found.");
-    }
-  };
-
-  const captureWebcam = () => {
-    const video = videoRef.current;
-    if (!video || video.readyState < 2) {
-      setWebcamStatus("Camera is not ready yet.");
-      return;
-    }
-
-    const captureCanvas = document.createElement("canvas");
-    captureCanvas.width = 320;
-    captureCanvas.height = 240;
-    const ctx = captureCanvas.getContext("2d");
-    if (!ctx) {
-      setWebcamStatus("Could not read the camera frame.");
-      return;
-    }
-
-    ctx.translate(captureCanvas.width, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
-    const trace = extractEdgeTrace(
-      ctx.getImageData(0, 0, captureCanvas.width, captureCanvas.height),
-      viewport.width * 0.55,
-      viewport.height * 0.55,
-      520,
-    );
-    if (trace.length > 0) {
-      loadPoints(trace, "Webcam trace", { fit: false });
-      setWebcamStatus(`Captured the largest connected outline: ${trace.length} points.`);
-    } else {
-      setWebcamStatus("No clear outline found. Try more light or move closer.");
-    }
-  };
-
   const saveBattleSlot = (slot: "a" | "b") => {
     if (drawing.points.length === 0 || drawing.components.length === 0) {
       return;
     }
 
     const entry: BattleEntry = {
-      name: slot === "a" ? "Player A" : "Player B",
+      name: slot === "a" ? "Left drawing" : "Right drawing",
       points: drawing.points,
       components: drawing.components,
       score: drawingDifficulty(drawing.points, drawing.components),
@@ -401,7 +334,6 @@ function FourierStudioClient() {
         epicycleCount={safeEpicycleCount}
         maxEpicycles={maxEpicycles}
         mode={mode}
-        onCaptureWebcam={captureWebcam}
         onClear={clearAndDraw}
         onDraw={() => {
           setDrawingEnabled(true);
@@ -420,7 +352,6 @@ function FourierStudioClient() {
         onReset={() => setResetToken((value) => value + 1)}
         onSaveBattleSlot={saveBattleSlot}
         onSpeedChange={setSpeed}
-        onStartWebcam={startWebcam}
         onSvgFile={handleSvgFile}
         onSvgTextChange={setSvgText}
         onToggleCircles={() => setShowCircles((value) => !value)}
@@ -438,17 +369,8 @@ function FourierStudioClient() {
         speed={speed}
         svgText={svgText}
         teachMode={teachMode}
-        webcamActive={webcamActive}
-        webcamStatus={webcamStatus}
       />
 
-      <video className={webcamActive ? "webcam-video is-active" : "webcam-video"} muted playsInline ref={videoRef} />
-      {webcamActive ? (
-        <div className="webcam-guide">
-          <span>Trace preview</span>
-          <b>Keep one bright outline inside the frame</b>
-        </div>
-      ) : null}
       <TeachPanel
         components={drawing.components}
         epicycleCount={safeEpicycleCount}
@@ -460,8 +382,16 @@ function FourierStudioClient() {
         <span>Math fact</span>
         <p>{fact}</p>
       </div>
-      <a className="corner-brand" href="https://github.com/puneetdixit200" rel="noreferrer" target="_blank">
-        Made by puneetdixit200
+      <a
+        aria-label="GitHub puneetdixit200"
+        className="corner-brand"
+        href="https://github.com/puneetdixit200"
+        rel="noreferrer"
+        target="_blank"
+      >
+        <Code2 aria-hidden="true" size={18} />
+        <span>GitHub</span>
+        <b>puneetdixit200</b>
       </a>
     </main>
   );

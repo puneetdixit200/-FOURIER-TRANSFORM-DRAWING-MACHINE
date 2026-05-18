@@ -4,7 +4,6 @@ import { useRef, useState, type CSSProperties, type PointerEvent as ReactPointer
 import {
   BadgeHelp,
   Box,
-  Camera,
   Circle,
   Download,
   Eraser,
@@ -13,6 +12,7 @@ import {
   FileUp,
   Film,
   GalleryHorizontalEnd,
+  GripHorizontal,
   InfinityIcon,
   Maximize2,
   Music,
@@ -20,7 +20,6 @@ import {
   PenLine,
   Play,
   RotateCcw,
-  Swords,
   Upload,
   Wand2,
 } from "lucide-react";
@@ -51,8 +50,6 @@ type ControlPanelProps = {
   components: FourierComponent[];
   svgText: string;
   battle: BattleSummary;
-  webcamActive: boolean;
-  webcamStatus: string;
   recording: boolean;
   recordingDurationSeconds: number;
   onModeChange: (mode: RenderMode) => void;
@@ -70,8 +67,6 @@ type ControlPanelProps = {
   onSvgTextChange: (value: string) => void;
   onLoadSvg: () => void;
   onSvgFile: (file: File) => void;
-  onStartWebcam: () => void;
-  onCaptureWebcam: () => void;
   onSaveBattleSlot: (slot: "a" | "b") => void;
   onExportVideo: () => void;
   onExportGif: () => void;
@@ -102,8 +97,6 @@ export function ControlPanel({
   components,
   svgText,
   battle,
-  webcamActive,
-  webcamStatus,
   recording,
   recordingDurationSeconds,
   onModeChange,
@@ -121,8 +114,6 @@ export function ControlPanel({
   onSvgTextChange,
   onLoadSvg,
   onSvgFile,
-  onStartWebcam,
-  onCaptureWebcam,
   onSaveBattleSlot,
   onExportVideo,
   onExportGif,
@@ -138,9 +129,9 @@ export function ControlPanel({
       ? battle.a.score === battle.b.score
         ? "Tie"
         : battle.a.score < battle.b.score
-          ? "Player A"
-          : "Player B"
-      : "Waiting";
+          ? "Left simpler"
+          : "Right simpler"
+      : "Waiting for two";
 
   const panelStyle: CSSProperties | undefined =
     panelPosition || panelSize
@@ -236,6 +227,14 @@ export function ControlPanel({
   return (
     <aside className="control-panel" ref={panelRef} style={panelStyle}>
       <div
+        className="panel-grab-zone panel-drag-handle"
+        onPointerDown={startPanelDrag}
+        onPointerMove={handlePanelDrag}
+      >
+        <GripHorizontal aria-hidden="true" size={18} />
+        <span>Move dashboard</span>
+      </div>
+      <div
         className="panel-header panel-drag-handle"
         onPointerDown={startPanelDrag}
         onPointerMove={handlePanelDrag}
@@ -285,8 +284,8 @@ export function ControlPanel({
           onClick={() => onModeChange("battle")}
           type="button"
         >
-          <Swords size={15} />
-          Battle
+          <GalleryHorizontalEnd size={15} />
+          Two Together
         </button>
         <button
           className={mode === "three" ? "mode-button is-active" : "mode-button"}
@@ -388,38 +387,20 @@ export function ControlPanel({
 
       <section className="panel-section">
         <div className="section-title">
-          <Camera size={15} />
-          Webcam trace
-        </div>
-        <div className="button-row">
-          <button className="small-button" onClick={onStartWebcam} type="button">
-            <Camera size={15} />
-            {webcamActive ? "Live" : "Start"}
-          </button>
-          <button className="small-button" disabled={!webcamActive} onClick={onCaptureWebcam} type="button">
-            <Wand2 size={15} />
-            Capture
-          </button>
-        </div>
-        <p className="mini-status">{webcamStatus}</p>
-      </section>
-
-      <section className="panel-section">
-        <div className="section-title">
-          <Swords size={15} />
-          Battle mode
+          <GalleryHorizontalEnd size={15} />
+          Two Together
         </div>
         <div className="button-row">
           <button className="small-button" onClick={() => onSaveBattleSlot("a")} type="button">
-            Save A
+            Save Left
           </button>
           <button className="small-button" onClick={() => onSaveBattleSlot("b")} type="button">
-            Save B
+            Save Right
           </button>
         </div>
         <div className="battle-score">
-          <span>A: {battle.a ? battle.a.score : "-"}</span>
-          <span>B: {battle.b ? battle.b.score : "-"}</span>
+          <span>Left: {battle.a ? battle.a.score : "-"}</span>
+          <span>Right: {battle.b ? battle.b.score : "-"}</span>
           <b>{winner}</b>
         </div>
       </section>
