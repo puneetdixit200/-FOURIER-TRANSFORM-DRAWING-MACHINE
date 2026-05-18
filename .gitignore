@@ -10,3 +10,5 @@ verification-*.png
 *.log
 .env*
 !.env.example
+
+.vercel
