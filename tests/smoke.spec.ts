@@ -22,10 +22,11 @@ test("home page renders canvas UI and switches core modes", async ({ page }) => 
   await expect(page.getByText("Math fact")).toBeVisible();
   const factBox = await page.locator(".fact-box").boundingBox();
   expect(factBox?.height).toBeGreaterThan(90);
-  await expect(page.getByRole("link", { name: "Made with love by PUNEET DIXIT GitHub" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Made with love by PUNEET DIXIT" })).toHaveAttribute(
     "href",
     "https://github.com/puneetdixit200",
   );
+  await expect(page.locator(".corner-brand")).not.toContainText("GitHub");
   await expect(page.getByText("Webcam trace")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Battle" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Two Together" })).toBeVisible();

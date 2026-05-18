@@ -499,14 +499,6 @@ input[type="range"] {
   font-weight: 800;
 }
 
-.corner-brand small {
-  align-items: center;
-  color: rgba(244, 251, 255, 0.72);
-  display: inline-flex;
-  font-size: 11px;
-  gap: 4px;
-}
-
 .corner-brand span {
   color: rgba(244, 251, 255, 0.62);
 }
@@ -675,7 +667,4 @@ input[type="range"] {
     display: none;
   }
 
-  .corner-brand small {
-    display: none;
-  }
 }
