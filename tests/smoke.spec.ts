@@ -22,10 +22,11 @@ test("home page renders canvas UI and switches core modes", async ({ page }) => 
   await expect(page.getByText("Math fact")).toBeVisible();
   const factBox = await page.locator(".fact-box").boundingBox();
   expect(factBox?.height).toBeGreaterThan(90);
-  await expect(page.getByRole("link", { name: "Made with love by PUNEET DIXIT" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Made with heart by PUNEET DIXIT" })).toHaveAttribute(
     "href",
     "https://github.com/puneetdixit200",
   );
+  await expect(page.locator(".corner-brand")).toContainText("Made with ❤️ by");
   await expect(page.locator(".corner-brand")).not.toContainText("GitHub");
   await expect(page.getByText("Webcam trace")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Battle" })).toHaveCount(0);
@@ -37,6 +38,8 @@ test("home page renders canvas UI and switches core modes", async ({ page }) => 
   await page.locator(".range-field").filter({ hasText: "Epicycles" }).locator("input").fill("96");
   await expect(page.getByLabel("Visible epicycles metric").locator("b")).toHaveText("96");
   await expect(page.getByLabel("Visible epicycles metric")).toContainText("19% of available detail");
+  await page.locator(".range-field").filter({ hasText: "Epicycles" }).locator("input").fill("32");
+  await expect(page.getByLabel("Visible epicycles metric").locator("b")).toHaveText("32");
 
   const panelBefore = await page.locator(".control-panel").boundingBox();
   expect(panelBefore?.height).toBeGreaterThan(680);

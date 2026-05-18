@@ -4,6 +4,10 @@ Interactive Next.js app that turns drawings, presets, and SVG paths into Fourier
 
 Live app: https://fourier-transform-drawing-machine.vercel.app
 
+## Screenshot
+
+![Fourier Transform Drawing Machine studio](docs/screenshots/studio.png)
+
 ## Features
 
 - Freehand mouse and touch drawing with interpolated pointer capture.
@@ -19,7 +23,7 @@ Live app: https://fourier-transform-drawing-machine.vercel.app
 - Fourier amplitude spectrum visualization.
 - GIF and MP4/WebM canvas export with user-selected duration.
 - Draggable and resizable glass dashboard.
-- Rotating math fact board and maker link embedded in the bottom-right signature.
+- Rotating math fact board and embedded maker link: Made with ❤️ by PUNEET DIXIT.
 
 ## Tech Stack
 
