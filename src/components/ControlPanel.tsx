@@ -14,6 +14,7 @@ import {
   Film,
   GalleryHorizontalEnd,
   InfinityIcon,
+  Maximize2,
   Music,
   Pause,
   PenLine,
@@ -77,6 +78,14 @@ type ControlPanelProps = {
   onRecordingDurationChange: (seconds: number) => void;
 };
 
+type DashboardSize = {
+  width: number;
+  height: number;
+};
+
+const MIN_PANEL_WIDTH = 300;
+const MIN_PANEL_HEIGHT = 320;
+
 export function ControlPanel({
   drawingName,
   activePreset,
@@ -121,7 +130,9 @@ export function ControlPanel({
 }: ControlPanelProps) {
   const panelRef = useRef<HTMLElement | null>(null);
   const dragRef = useRef({ dx: 0, dy: 0 });
+  const resizeRef = useRef({ height: 0, startX: 0, startY: 0, width: 0 });
   const [panelPosition, setPanelPosition] = useState<{ x: number; y: number } | null>(null);
+  const [panelSize, setPanelSize] = useState<DashboardSize | null>(null);
   const winner =
     battle.a && battle.b
       ? battle.a.score === battle.b.score
@@ -131,9 +142,27 @@ export function ControlPanel({
           : "Player B"
       : "Waiting";
 
-  const panelStyle: CSSProperties | undefined = panelPosition
-    ? { left: panelPosition.x, top: panelPosition.y, bottom: "auto" }
-    : undefined;
+  const panelStyle: CSSProperties | undefined =
+    panelPosition || panelSize
+      ? {
+          ...(panelPosition ? { bottom: "auto", left: panelPosition.x, top: panelPosition.y } : {}),
+          ...(panelSize ? { height: panelSize.height, maxHeight: "none", width: panelSize.width } : {}),
+        }
+      : undefined;
+
+  const clampPanelSize = (width: number, height: number): DashboardSize => {
+    const rect = panelRef.current?.getBoundingClientRect();
+    const left = rect?.left ?? 8;
+    const top = rect?.top ?? 8;
+    const maxWidth = Math.max(220, window.innerWidth - left - 8);
+    const maxHeight = Math.max(260, window.innerHeight - top - 8);
+    const minWidth = Math.min(MIN_PANEL_WIDTH, maxWidth);
+    const minHeight = Math.min(MIN_PANEL_HEIGHT, maxHeight);
+    return {
+      height: Math.min(Math.max(minHeight, height), maxHeight),
+      width: Math.min(Math.max(minWidth, width), maxWidth),
+    };
+  };
 
   const movePanel = (x: number, y: number) => {
     const panel = panelRef.current;
@@ -169,6 +198,39 @@ export function ControlPanel({
       return;
     }
     movePanel(event.clientX - dragRef.current.dx, event.clientY - dragRef.current.dy);
+  };
+
+  const startPanelResize = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const panel = panelRef.current;
+    if (!panel) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = panel.getBoundingClientRect();
+    resizeRef.current = {
+      height: rect.height,
+      startX: event.clientX,
+      startY: event.clientY,
+      width: rect.width,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setPanelPosition({ x: rect.left, y: rect.top });
+    setPanelSize(clampPanelSize(rect.width, rect.height));
+  };
+
+  const handlePanelResize = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    setPanelSize(
+      clampPanelSize(
+        resizeRef.current.width + event.clientX - resizeRef.current.startX,
+        resizeRef.current.height + event.clientY - resizeRef.current.startY,
+      ),
+    );
   };
 
   return (
@@ -397,6 +459,26 @@ export function ControlPanel({
 
       {drawingEnabled ? <p className="draw-status">Draw on the canvas.</p> : null}
       {recording ? <p className="draw-status">Recording export...</p> : null}
+      <button
+        aria-label="Resize dashboard"
+        className="dashboard-resize-handle"
+        onPointerCancel={(event) => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+          }
+        }}
+        onPointerDown={startPanelResize}
+        onPointerMove={handlePanelResize}
+        onPointerUp={(event) => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+          }
+        }}
+        title="Resize dashboard"
+        type="button"
+      >
+        <Maximize2 size={13} />
+      </button>
     </aside>
   );
 }

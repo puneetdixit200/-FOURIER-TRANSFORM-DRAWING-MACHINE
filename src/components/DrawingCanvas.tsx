@@ -26,6 +26,7 @@ type DrawingCanvasProps = {
   showCircles: boolean;
   showLines: boolean;
   teachMode: boolean;
+  zoom: number;
   resetToken: number;
   onDrawingComplete: (points: Point[]) => void;
 };
@@ -48,6 +49,7 @@ function drawSmoothPath(
   stroke: string,
   width: number,
   glow = 0,
+  zoom = 1,
 ) {
   if (points.length < 2) {
     return;
@@ -61,21 +63,21 @@ function drawSmoothPath(
   ctx.shadowColor = stroke;
   ctx.shadowBlur = glow;
   ctx.beginPath();
-  ctx.moveTo(origin.x + points[0].x, origin.y + points[0].y);
+  ctx.moveTo(origin.x + points[0].x * zoom, origin.y + points[0].y * zoom);
 
   for (let index = 1; index < points.length - 1; index += 1) {
     const current = points[index];
     const next = points[index + 1];
     ctx.quadraticCurveTo(
-      origin.x + current.x,
-      origin.y + current.y,
-      origin.x + (current.x + next.x) / 2,
-      origin.y + (current.y + next.y) / 2,
+      origin.x + current.x * zoom,
+      origin.y + current.y * zoom,
+      origin.x + ((current.x + next.x) / 2) * zoom,
+      origin.y + ((current.y + next.y) / 2) * zoom,
     );
   }
 
   const last = points[points.length - 1];
-  ctx.lineTo(origin.x + last.x, origin.y + last.y);
+  ctx.lineTo(origin.x + last.x * zoom, origin.y + last.y * zoom);
   ctx.stroke();
   ctx.restore();
 }
@@ -125,17 +127,20 @@ function drawEpicycleChain(
     rotate?: boolean;
     lineColor?: string;
     circleColor?: string;
+    zoom?: number;
   },
 ) {
   let center = { ...origin };
   const max = Math.min(count, components.length);
+  const zoom = options.zoom ?? 1;
 
   for (let index = 0; index < max; index += 1) {
     const component = components[index];
     const angle = component.frequency * time + component.phase;
+    const radius = component.amplitude * zoom;
     const rawVector = {
-      x: Math.cos(angle) * component.amplitude,
-      y: Math.sin(angle) * component.amplitude,
+      x: Math.cos(angle) * radius,
+      y: Math.sin(angle) * radius,
     };
     const vector = options.rotate
       ? { x: -rawVector.y, y: rawVector.x }
@@ -145,9 +150,9 @@ function drawEpicycleChain(
       y: center.y + vector.y,
     };
 
-    if (options.showCircles && component.amplitude > 0.4) {
+    if (options.showCircles && radius > 0.4) {
       ctx.beginPath();
-      ctx.arc(center.x, center.y, component.amplitude, 0, TAU);
+      ctx.arc(center.x, center.y, radius, 0, TAU);
       ctx.fillStyle = colors.circleFill;
       ctx.strokeStyle = options.circleColor ?? colors.circle;
       ctx.lineWidth = 1.35;
@@ -207,6 +212,7 @@ export function DrawingCanvas({
   showCircles,
   showLines,
   teachMode,
+  zoom,
   resetToken,
   onDrawingComplete,
 }: DrawingCanvasProps) {
@@ -232,7 +238,7 @@ export function DrawingCanvas({
     trailRef.current = [];
     dualTrailRef.current = [];
     battleTrailRef.current = { a: [], b: [] };
-  }, [resetToken, sourcePath, components, mode]);
+  }, [resetToken, sourcePath, components, mode, zoom]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -285,7 +291,7 @@ export function DrawingCanvas({
       ctx.restore();
 
       if (sourcePath.length > 1) {
-        drawSmoothPath(ctx, sourcePath, center, "rgba(0,240,255,0.28)", 2, 12);
+        drawSmoothPath(ctx, sourcePath, center, "rgba(0,240,255,0.28)", 2, 12, zoom);
       }
 
       if (mode === "dual" && sourcePath.length > 1) {
@@ -294,6 +300,7 @@ export function DrawingCanvas({
         const xTip = drawEpicycleChain(ctx, xComponents, topOrigin, timeRef.current, epicycleCount, {
           showCircles,
           showLines,
+          zoom,
           circleColor: "rgba(71, 211, 255, 0.72)",
           lineColor: "rgba(255, 232, 92, 0.76)",
         });
@@ -301,6 +308,7 @@ export function DrawingCanvas({
           showCircles,
           showLines,
           rotate: true,
+          zoom,
           circleColor: "rgba(255, 111, 170, 0.72)",
           lineColor: "rgba(124, 255, 107, 0.76)",
         });
@@ -327,10 +335,11 @@ export function DrawingCanvas({
           if (!entry) {
             return;
           }
-          drawSmoothPath(ctx, entry.points, origin, `${color}33`, 2, 8);
+          drawSmoothPath(ctx, entry.points, origin, `${color}33`, 2, 8, zoom);
           const tip = drawEpicycleChain(ctx, entry.components, origin, timeRef.current, epicycleCount, {
             showCircles,
             showLines,
+            zoom,
             circleColor: `${color}55`,
             lineColor: `${color}44`,
           });
@@ -347,6 +356,7 @@ export function DrawingCanvas({
         const tip = drawEpicycleChain(ctx, components, center, timeRef.current, epicycleCount, {
           showCircles,
           showLines,
+          zoom,
         });
         if (playing && !isDrawingRef.current) {
           trailRef.current.push(tip);
@@ -363,7 +373,7 @@ export function DrawingCanvas({
       }
 
       if (draftPath.length > 1) {
-        drawSmoothPath(ctx, draftPath, center, colors.raw, 4, 22);
+        drawSmoothPath(ctx, draftPath, center, colors.raw, 4, 22, zoom);
       }
 
       if (teachMode) {
@@ -406,6 +416,7 @@ export function DrawingCanvas({
     teachMode,
     xComponents,
     yComponents,
+    zoom,
   ]);
 
   const pointerToPoint = (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -416,8 +427,8 @@ export function DrawingCanvas({
     }
 
     return {
-      x: event.clientX - rect.left - rect.width / 2,
-      y: event.clientY - rect.top - rect.height / 2,
+      x: (event.clientX - rect.left - rect.width / 2) / zoom,
+      y: (event.clientY - rect.top - rect.height / 2) / zoom,
     };
   };
 

@@ -13,6 +13,7 @@ type ThreeEpicycleViewProps = {
   playing: boolean;
   showCircles: boolean;
   showLines: boolean;
+  zoom: number;
   onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
 };
 
@@ -61,6 +62,7 @@ export function ThreeEpicycleView({
   playing,
   showCircles,
   showLines,
+  zoom,
   onCanvasReady,
 }: ThreeEpicycleViewProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -87,7 +89,11 @@ export function ThreeEpicycleView({
 
     const sourcePoints = sourcePath.map(
       (point, index) =>
-        new THREE.Vector3(point.x, -point.y, Math.sin((index / Math.max(1, sourcePath.length)) * TAU) * 64),
+        new THREE.Vector3(
+          point.x * zoom,
+          -point.y * zoom,
+          Math.sin((index / Math.max(1, sourcePath.length)) * TAU) * 64 * zoom,
+        ),
     );
     const sourceLine = makeLine(sourcePoints, 0x00f0ff, 0.82);
     scene.add(sourceLine);
@@ -145,15 +151,16 @@ export function ThreeEpicycleView({
       for (let index = 0; index < max; index += 1) {
         const component = components[index];
         const angle = component.frequency * time + component.phase;
+        const radius = component.amplitude * zoom;
         const vector = new THREE.Vector3(
-          Math.cos(angle) * component.amplitude,
-          -Math.sin(angle) * component.amplitude,
-          Math.sin(angle * 0.6 + component.frequency) * component.amplitude * 0.22,
+          Math.cos(angle) * radius,
+          -Math.sin(angle) * radius,
+          Math.sin(angle * 0.6 + component.frequency) * radius * 0.22,
         );
         const next = center.clone().add(vector);
 
-        if (showCircles && component.amplitude > 0.4) {
-          epicycleGroup.add(makeCircle(component.amplitude, center, 0x79dcff, 0.7));
+        if (showCircles && radius > 0.4) {
+          epicycleGroup.add(makeCircle(radius, center, 0x79dcff, 0.7));
         }
         if (showLines) {
           epicycleGroup.add(makeLine([center, next], 0xffe25c, 0.95));
@@ -191,7 +198,7 @@ export function ThreeEpicycleView({
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [components, epicycleCount, onCanvasReady, playing, showCircles, showLines, sourcePath, speed]);
+  }, [components, epicycleCount, onCanvasReady, playing, showCircles, showLines, sourcePath, speed, zoom]);
 
   return <div className="three-stage" ref={hostRef} />;
 }

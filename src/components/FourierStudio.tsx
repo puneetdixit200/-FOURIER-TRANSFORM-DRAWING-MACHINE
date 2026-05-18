@@ -6,6 +6,7 @@ import { DrawingCanvas } from "./DrawingCanvas";
 import { drawingDifficulty, prepareDrawing, type PreparedDrawing } from "./FourierEngine";
 import { TeachPanel } from "./TeachPanel";
 import { ThreeEpicycleView } from "./ThreeEpicycleView";
+import { ZoomToolbar } from "./ZoomToolbar";
 import { useFourierSound } from "@/hooks/useFourierSound";
 import type { Point } from "@/utils/complex";
 import { factForElapsedTime } from "@/utils/facts";
@@ -13,6 +14,7 @@ import { getPreset } from "@/utils/presets";
 import { clampRecordingDuration, createGifFramePlan } from "@/utils/recording";
 import { extractSvgPathData, sampleSvgPath } from "@/utils/svgPath";
 import { extractEdgeTrace } from "@/utils/webcamTrace";
+import { clampZoom, stepZoom } from "@/utils/zoom";
 
 type BattleEntry = {
   name: string;
@@ -80,6 +82,7 @@ function FourierStudioClient() {
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [teachMode, setTeachMode] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [zoom, setZoom] = useState(1);
   const [epicycleCount, setEpicycleCount] = useState(160);
   const [resetToken, setResetToken] = useState(0);
   const [svgText, setSvgText] = useState("");
@@ -360,6 +363,7 @@ function FourierStudioClient() {
           showLines={showLines}
           sourcePath={drawing.points}
           speed={speed}
+          zoom={zoom}
         />
       ) : (
         <DrawingCanvas
@@ -377,8 +381,16 @@ function FourierStudioClient() {
           sourcePath={drawing.points}
           speed={speed}
           teachMode={false}
+          zoom={zoom}
         />
       )}
+
+      <ZoomToolbar
+        onResetZoom={() => setZoom(1)}
+        onZoomIn={() => setZoom((current) => stepZoom(current, 1))}
+        onZoomOut={() => setZoom((current) => stepZoom(current, -1))}
+        zoom={clampZoom(zoom)}
+      />
 
       <ControlPanel
         activePreset={activePreset}

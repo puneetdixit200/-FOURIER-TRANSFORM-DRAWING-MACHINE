@@ -12,6 +12,13 @@ test("home page renders canvas UI and switches core modes", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "Pi preset" })).toBeVisible();
   await expect(page.locator("canvas")).toBeVisible();
   await expect(page.getByRole("button", { exact: true, name: "Draw" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Zoom in" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Zoom out" })).toBeVisible();
+  await expect(page.locator(".zoom-value")).toHaveText("100%");
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  await expect(page.locator(".zoom-value")).toHaveText("115%");
+  await page.getByRole("button", { name: "Zoom out" }).click();
+  await expect(page.locator(".zoom-value")).toHaveText("100%");
   await expect(page.getByText("Math fact")).toBeVisible();
   const factBox = await page.locator(".fact-box").boundingBox();
   expect(factBox?.height).toBeGreaterThan(90);
@@ -31,6 +38,20 @@ test("home page renders canvas UI and switches core modes", async ({ page }) => 
     await page.mouse.up();
     const panelAfter = await page.locator(".control-panel").boundingBox();
     expect(panelAfter?.x).toBeGreaterThan(panelBefore.x + 80);
+  }
+
+  const panelBeforeResize = await page.locator(".control-panel").boundingBox();
+  const resizeHandle = await page.getByLabel("Resize dashboard").boundingBox();
+  expect(panelBeforeResize).not.toBeNull();
+  expect(resizeHandle).not.toBeNull();
+  if (panelBeforeResize && resizeHandle) {
+    await page.mouse.move(resizeHandle.x + resizeHandle.width / 2, resizeHandle.y + resizeHandle.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(resizeHandle.x + 130, resizeHandle.y + 90, { steps: 8 });
+    await page.mouse.up();
+    const panelAfterResize = await page.locator(".control-panel").boundingBox();
+    expect(panelAfterResize?.width).toBeGreaterThan(panelBeforeResize.width + 60);
+    expect(panelAfterResize?.height).toBeGreaterThan(panelBeforeResize.height + 40);
   }
 
   await page.getByRole("button", { name: "Dual-axis" }).click();

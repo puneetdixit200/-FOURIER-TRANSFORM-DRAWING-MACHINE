@@ -86,9 +86,11 @@ button {
   flex-direction: column;
   gap: 12px;
   left: 18px;
-  max-height: calc(100dvh - 36px);
+  max-height: min(560px, calc(100dvh - 36px));
+  min-height: 320px;
+  min-width: min(300px, calc(100vw - 20px));
   overflow: auto;
-  padding: 14px;
+  padding: 14px 14px 34px;
   position: absolute;
   width: min(390px, calc(100vw - 28px));
   z-index: 4;
@@ -119,6 +121,71 @@ button {
 
 .panel-drag-handle:active {
   cursor: grabbing;
+}
+
+.zoom-toolbar {
+  align-items: center;
+  backdrop-filter: blur(18px);
+  background: rgba(10, 10, 15, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  box-shadow: 0 16px 46px rgba(0, 0, 0, 0.32), 0 0 26px rgba(0, 240, 255, 0.09);
+  display: flex;
+  gap: 6px;
+  left: 50%;
+  padding: 7px;
+  position: absolute;
+  top: 16px;
+  transform: translateX(-50%);
+  z-index: 5;
+}
+
+.zoom-button,
+.zoom-value,
+.dashboard-resize-handle {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.zoom-button {
+  height: 34px;
+  width: 34px;
+}
+
+.zoom-value {
+  color: rgba(244, 251, 255, 0.82);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  gap: 6px;
+  height: 34px;
+  min-width: 78px;
+  padding: 0 10px;
+}
+
+.zoom-button:hover,
+.zoom-value:hover,
+.dashboard-resize-handle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(0, 240, 255, 0.38);
+}
+
+.dashboard-resize-handle {
+  bottom: 8px;
+  color: rgba(244, 251, 255, 0.72);
+  cursor: nwse-resize;
+  height: 24px;
+  position: absolute;
+  right: 8px;
+  touch-action: none;
+  width: 24px;
+  z-index: 2;
 }
 
 .eyebrow {
@@ -569,8 +636,13 @@ input[type="range"] {
     bottom: 10px;
     left: 10px;
     max-height: 52dvh;
-    padding: 12px;
+    min-height: 280px;
+    padding: 12px 12px 34px;
     width: calc(100vw - 20px);
+  }
+
+  .zoom-toolbar {
+    top: 10px;
   }
 
   h1 {
