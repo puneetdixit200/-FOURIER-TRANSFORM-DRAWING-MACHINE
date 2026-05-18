@@ -7,7 +7,9 @@ import { drawingDifficulty, prepareDrawing, type PreparedDrawing } from "./Fouri
 import { ThreeEpicycleView } from "./ThreeEpicycleView";
 import { useFourierSound } from "@/hooks/useFourierSound";
 import type { Point } from "@/utils/complex";
+import { factForElapsedTime } from "@/utils/facts";
 import { getPreset } from "@/utils/presets";
+import { clampRecordingDuration, createGifFramePlan } from "@/utils/recording";
 import { extractSvgPathData, sampleSvgPath } from "@/utils/svgPath";
 import { extractEdgeTrace } from "@/utils/webcamTrace";
 
@@ -63,6 +65,7 @@ function FourierStudioClient() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const webcamStreamRef = useRef<MediaStream | null>(null);
   const initializedRef = useRef(false);
+  const startTimeRef = useRef<number | null>(null);
 
   const [viewport, setViewport] = useState({ width: 1200, height: 760 });
   const [drawing, setDrawing] = useState<PreparedDrawing>(emptyDrawing);
@@ -80,8 +83,11 @@ function FourierStudioClient() {
   const [resetToken, setResetToken] = useState(0);
   const [svgText, setSvgText] = useState("");
   const [webcamActive, setWebcamActive] = useState(false);
+  const [webcamStatus, setWebcamStatus] = useState("Start camera, then capture a high-contrast outline.");
   const [recording, setRecording] = useState(false);
+  const [recordingDurationSeconds, setRecordingDurationSeconds] = useState(6);
   const [battle, setBattle] = useState<{ a?: BattleEntry; b?: BattleEntry }>({});
+  const [fact, setFact] = useState(() => factForElapsedTime(0));
 
   useFourierSound(soundEnabled, playing, drawing.components, speed);
 
@@ -92,6 +98,14 @@ function FourierStudioClient() {
     updateViewport();
     window.addEventListener("resize", updateViewport);
     return () => window.removeEventListener("resize", updateViewport);
+  }, []);
+
+  useEffect(() => {
+    startTimeRef.current = Date.now();
+    const interval = window.setInterval(() => {
+      setFact(factForElapsedTime(Date.now() - (startTimeRef.current ?? Date.now())));
+    }, 1000);
+    return () => window.clearInterval(interval);
   }, []);
 
   const loadPoints = useCallback(
@@ -169,32 +183,44 @@ function FourierStudioClient() {
       webcamStreamRef.current.getTracks().forEach((track) => track.stop());
       webcamStreamRef.current = null;
       setWebcamActive(false);
+      setWebcamStatus("Camera stopped.");
       return;
     }
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: 640, height: 480, facingMode: "user" },
-      audio: false,
-    });
-    webcamStreamRef.current = stream;
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: "user",
+        },
+        audio: false,
+      });
+      webcamStreamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setWebcamActive(true);
+      setWebcamStatus("Camera live. Use bright lighting, then capture.");
+    } catch {
+      setWebcamStatus("Camera permission failed or no camera was found.");
     }
-    setWebcamActive(true);
   };
 
   const captureWebcam = () => {
     const video = videoRef.current;
     if (!video || video.readyState < 2) {
+      setWebcamStatus("Camera is not ready yet.");
       return;
     }
 
     const captureCanvas = document.createElement("canvas");
-    captureCanvas.width = 180;
-    captureCanvas.height = 135;
+    captureCanvas.width = 320;
+    captureCanvas.height = 240;
     const ctx = captureCanvas.getContext("2d");
     if (!ctx) {
+      setWebcamStatus("Could not read the camera frame.");
       return;
     }
 
@@ -205,9 +231,13 @@ function FourierStudioClient() {
       ctx.getImageData(0, 0, captureCanvas.width, captureCanvas.height),
       viewport.width * 0.55,
       viewport.height * 0.55,
+      520,
     );
     if (trace.length > 0) {
       loadPoints(trace, "Webcam trace", { fit: false });
+      setWebcamStatus(`Captured ${trace.length} edge points.`);
+    } else {
+      setWebcamStatus("No clear outline found. Try more light or move closer.");
     }
   };
 
@@ -229,7 +259,7 @@ function FourierStudioClient() {
 
   const exportVideo = async () => {
     const canvas = activeCanvasRef.current ?? canvasRef.current;
-    if (!canvas || !canvas.captureStream) {
+    if (!canvas || !canvas.captureStream || recording) {
       return;
     }
 
@@ -244,30 +274,36 @@ function FourierStudioClient() {
       }
     };
 
-    setRecording(true);
-    recorder.start();
-    await wait(6500);
-    await new Promise<void>((resolve) => {
-      recorder.onstop = () => resolve();
-      recorder.stop();
-    });
-    stream.getTracks().forEach((track) => track.stop());
-    setRecording(false);
+    try {
+      setRecording(true);
+      recorder.start(250);
+      await wait(clampRecordingDuration(recordingDurationSeconds) * 1000);
+      await new Promise<void>((resolve) => {
+        recorder.onstop = () => resolve();
+        recorder.stop();
+      });
 
-    const type = mimeType ?? "video/webm";
-    const extension = type.includes("mp4") ? "mp4" : "webm";
-    downloadBlob(new Blob(chunks, { type }), `fourier-drawing.${extension}`);
+      const type = mimeType ?? "video/webm";
+      const extension = type.includes("mp4") ? "mp4" : "webm";
+      downloadBlob(new Blob(chunks, { type }), `fourier-drawing-${recordingDurationSeconds}s.${extension}`);
+    } finally {
+      stream.getTracks().forEach((track) => track.stop());
+      setRecording(false);
+    }
   };
 
   const exportGif = async () => {
     const canvas = activeCanvasRef.current ?? canvasRef.current;
-    if (!canvas) {
+    if (!canvas || recording) {
       return;
     }
 
     const { GIFEncoder, applyPalette, quantize } = await import("gifenc");
-    const width = 480;
-    const height = Math.max(270, Math.round((canvas.height / Math.max(1, canvas.width)) * width));
+    const plan = createGifFramePlan(recordingDurationSeconds, 15);
+    const cssWidth = canvas.clientWidth || canvas.width;
+    const cssHeight = canvas.clientHeight || canvas.height;
+    const width = 640;
+    const height = Math.max(360, Math.round((cssHeight / Math.max(1, cssWidth)) * width));
     const capture = document.createElement("canvas");
     capture.width = width;
     capture.height = height;
@@ -276,21 +312,26 @@ function FourierStudioClient() {
       return;
     }
 
-    setRecording(true);
-    const gif = GIFEncoder();
-    for (let frame = 0; frame < 42; frame += 1) {
-      ctx.drawImage(canvas, 0, 0, width, height);
-      const data = ctx.getImageData(0, 0, width, height).data;
-      const palette = quantize(data, 256);
-      const index = applyPalette(data, palette);
-      gif.writeFrame(index, width, height, { palette, delay: 80 });
-      await wait(80);
+    try {
+      setRecording(true);
+      const gif = GIFEncoder();
+      for (let frame = 0; frame < plan.frameCount; frame += 1) {
+        ctx.fillStyle = "#0a0a0f";
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(canvas, 0, 0, width, height);
+        const data = ctx.getImageData(0, 0, width, height).data;
+        const palette = quantize(data, 256);
+        const index = applyPalette(data, palette);
+        gif.writeFrame(index, width, height, { palette, delay: plan.delayMs });
+        await wait(plan.delayMs);
+      }
+      gif.finish();
+      const bytes = gif.bytes();
+      const buffer = new Uint8Array(bytes).buffer as ArrayBuffer;
+      downloadBlob(new Blob([buffer], { type: "image/gif" }), `fourier-drawing-${recordingDurationSeconds}s.gif`);
+    } finally {
+      setRecording(false);
     }
-    gif.finish();
-    setRecording(false);
-    const bytes = gif.bytes();
-    const buffer = new Uint8Array(bytes).buffer as ArrayBuffer;
-    downloadBlob(new Blob([buffer], { type: "image/gif" }), "fourier-drawing.gif");
   };
 
   const maxEpicycles = Math.max(1, drawing.maxEpicycles);
@@ -372,10 +413,12 @@ function FourierStudioClient() {
         onToggleCircles={() => setShowCircles((value) => !value)}
         onToggleLines={() => setShowLines((value) => !value)}
         onTogglePlay={() => setPlaying((value) => !value)}
+        onRecordingDurationChange={(seconds) => setRecordingDurationSeconds(clampRecordingDuration(seconds))}
         onToggleSound={() => setSoundEnabled((value) => !value)}
         onToggleTeach={() => setTeachMode((value) => !value)}
         playing={playing}
         recording={recording}
+        recordingDurationSeconds={recordingDurationSeconds}
         showCircles={showCircles}
         showLines={showLines}
         soundEnabled={soundEnabled}
@@ -383,10 +426,17 @@ function FourierStudioClient() {
         svgText={svgText}
         teachMode={teachMode}
         webcamActive={webcamActive}
+        webcamStatus={webcamStatus}
       />
 
       <video className={webcamActive ? "webcam-video is-active" : "webcam-video"} muted playsInline ref={videoRef} />
-      <div className="corner-brand">DFT / Epicycle Lab</div>
+      <div className="fact-box">
+        <span>Math fact</span>
+        <p>{fact}</p>
+      </div>
+      <a className="corner-brand" href="https://github.com/puneetdixit200" rel="noreferrer" target="_blank">
+        Made by puneetdixit200
+      </a>
     </main>
   );
 }

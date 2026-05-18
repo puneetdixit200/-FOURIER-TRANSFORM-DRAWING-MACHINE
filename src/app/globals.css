@@ -111,6 +111,16 @@ button {
   justify-content: space-between;
 }
 
+.panel-drag-handle {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.panel-drag-handle:active {
+  cursor: grabbing;
+}
+
 .eyebrow {
   color: var(--cyan);
   font-family: var(--font-mono);
@@ -146,6 +156,7 @@ h1 {
 .primary-button,
 .small-button,
 .icon-button,
+.draw-button,
 .mode-button,
 .toggle,
 .preset-button,
@@ -177,6 +188,12 @@ h1 {
   width: 38px;
 }
 
+.draw-button {
+  min-height: 38px;
+  padding-inline: 12px;
+  width: auto;
+}
+
 .small-button {
   font-size: 12px;
   min-height: 34px;
@@ -185,6 +202,7 @@ h1 {
 .primary-button:hover,
 .small-button:hover,
 .icon-button:hover,
+.draw-button:hover,
 .mode-button:hover,
 .toggle:hover,
 .preset-button:hover {
@@ -233,6 +251,10 @@ h1 {
   gap: 7px;
 }
 
+.range-field.compact {
+  gap: 5px;
+}
+
 .range-field span {
   color: var(--muted);
   display: flex;
@@ -269,7 +291,9 @@ input[type="range"] {
 .preset-grid {
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  max-height: 164px;
+  overflow: auto;
 }
 
 .preset-button {
@@ -354,6 +378,13 @@ input[type="range"] {
   margin: 0;
 }
 
+.mini-status {
+  color: rgba(244, 251, 255, 0.5);
+  font-size: 11px;
+  line-height: 1.35;
+  margin: 0;
+}
+
 .webcam-video {
   border: 1px solid rgba(0, 240, 255, 0.32);
   border-radius: 8px;
@@ -380,7 +411,41 @@ input[type="range"] {
   position: absolute;
   right: 18px;
   bottom: 18px;
+  text-decoration: none;
   z-index: 2;
+}
+
+.corner-brand:hover {
+  color: var(--cyan);
+}
+
+.fact-box {
+  backdrop-filter: blur(18px);
+  background: rgba(10, 10, 15, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 8px;
+  bottom: 46px;
+  max-width: min(430px, calc(100vw - 470px));
+  padding: 12px 14px;
+  position: absolute;
+  right: 18px;
+  z-index: 2;
+}
+
+.fact-box span {
+  color: var(--gold);
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.fact-box p {
+  color: rgba(244, 251, 255, 0.75);
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 0;
 }
 
 @media (max-width: 760px) {
@@ -402,7 +467,8 @@ input[type="range"] {
   }
 
   .webcam-video,
-  .corner-brand {
+  .corner-brand,
+  .fact-box {
     display: none;
   }
 }

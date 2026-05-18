@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import {
   BadgeHelp,
   Box,
@@ -50,7 +51,9 @@ type ControlPanelProps = {
   svgText: string;
   battle: BattleSummary;
   webcamActive: boolean;
+  webcamStatus: string;
   recording: boolean;
+  recordingDurationSeconds: number;
   onModeChange: (mode: RenderMode) => void;
   onTogglePlay: () => void;
   onReset: () => void;
@@ -71,6 +74,7 @@ type ControlPanelProps = {
   onSaveBattleSlot: (slot: "a" | "b") => void;
   onExportVideo: () => void;
   onExportGif: () => void;
+  onRecordingDurationChange: (seconds: number) => void;
 };
 
 export function ControlPanel({
@@ -90,7 +94,9 @@ export function ControlPanel({
   svgText,
   battle,
   webcamActive,
+  webcamStatus,
   recording,
+  recordingDurationSeconds,
   onModeChange,
   onTogglePlay,
   onReset,
@@ -111,7 +117,11 @@ export function ControlPanel({
   onSaveBattleSlot,
   onExportVideo,
   onExportGif,
+  onRecordingDurationChange,
 }: ControlPanelProps) {
+  const panelRef = useRef<HTMLElement | null>(null);
+  const dragRef = useRef({ dx: 0, dy: 0 });
+  const [panelPosition, setPanelPosition] = useState<{ x: number; y: number } | null>(null);
   const winner =
     battle.a && battle.b
       ? battle.a.score === battle.b.score
@@ -121,15 +131,60 @@ export function ControlPanel({
           : "Player B"
       : "Waiting";
 
+  const panelStyle: CSSProperties | undefined = panelPosition
+    ? { left: panelPosition.x, top: panelPosition.y, bottom: "auto" }
+    : undefined;
+
+  const movePanel = (x: number, y: number) => {
+    const panel = panelRef.current;
+    const width = panel?.offsetWidth ?? 390;
+    const height = panel?.offsetHeight ?? 520;
+    const maxX = Math.max(8, window.innerWidth - width - 8);
+    const maxY = Math.max(8, window.innerHeight - Math.min(height, window.innerHeight - 16) - 8);
+    setPanelPosition({
+      x: Math.min(maxX, Math.max(8, x)),
+      y: Math.min(maxY, Math.max(8, y)),
+    });
+  };
+
+  const startPanelDrag = (event: ReactPointerEvent<HTMLElement>) => {
+    if ((event.target as HTMLElement).closest("button")) {
+      return;
+    }
+    const panel = panelRef.current;
+    if (!panel) {
+      return;
+    }
+    const rect = panel.getBoundingClientRect();
+    dragRef.current = {
+      dx: event.clientX - rect.left,
+      dy: event.clientY - rect.top,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    movePanel(rect.left, rect.top);
+  };
+
+  const handlePanelDrag = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+      return;
+    }
+    movePanel(event.clientX - dragRef.current.dx, event.clientY - dragRef.current.dy);
+  };
+
   return (
-    <aside className="control-panel">
-      <div className="panel-header">
+    <aside className="control-panel" ref={panelRef} style={panelStyle}>
+      <div
+        className="panel-header panel-drag-handle"
+        onPointerDown={startPanelDrag}
+        onPointerMove={handlePanelDrag}
+      >
         <div>
           <p className="eyebrow">Fourier Drawing Machine</p>
           <h1>{drawingName}</h1>
         </div>
-        <button className="icon-button pulse" onClick={onDraw} title="Draw your own" type="button">
+        <button className="draw-button pulse" onClick={onDraw} title="Draw your own" type="button">
           <PenLine size={18} />
+          Draw
         </button>
       </div>
 
@@ -284,6 +339,7 @@ export function ControlPanel({
             Capture
           </button>
         </div>
+        <p className="mini-status">{webcamStatus}</p>
       </section>
 
       <section className="panel-section">
@@ -311,6 +367,20 @@ export function ControlPanel({
           <Film size={15} />
           Export
         </div>
+        <label className="range-field compact">
+          <span>
+            Duration <b>{recordingDurationSeconds}s</b>
+          </span>
+          <input
+            aria-label="Recording duration"
+            max={30}
+            min={2}
+            onChange={(event) => onRecordingDurationChange(Number(event.target.value))}
+            step={1}
+            type="range"
+            value={recordingDurationSeconds}
+          />
+        </label>
         <div className="button-row">
           <button className="small-button" disabled={recording} onClick={onExportVideo} type="button">
             <Download size={15} />
@@ -330,4 +400,3 @@ export function ControlPanel({
     </aside>
   );
 }
-
