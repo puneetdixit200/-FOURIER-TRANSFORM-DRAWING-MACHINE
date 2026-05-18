@@ -2,11 +2,13 @@
 
 import { useEffect, useRef } from "react";
 import type { FourierComponent } from "@/utils/dft";
+import { createFourierVoicePlan } from "@/utils/soundDesign";
 
 type Voice = {
   oscillator: OscillatorNode;
   gain: GainNode;
   panner: StereoPannerNode;
+  send: GainNode;
 };
 
 export function useFourierSound(
@@ -34,42 +36,53 @@ export function useFourierSound(
     const context = new AudioContextClass();
     const master = context.createGain();
     const compressor = context.createDynamicsCompressor();
+    const lowpass = context.createBiquadFilter();
     const delay = context.createDelay(1.2);
     const feedback = context.createGain();
     const wet = context.createGain();
-    master.gain.value = playing ? 0.12 : 0;
-    delay.delayTime.value = 0.28;
-    feedback.gain.value = 0.36;
-    wet.gain.value = 0.22;
+    master.gain.value = playing ? 0.095 : 0;
+    lowpass.type = "lowpass";
+    lowpass.frequency.value = 1450;
+    lowpass.Q.value = 0.7;
+    compressor.threshold.value = -28;
+    compressor.knee.value = 24;
+    compressor.ratio.value = 3;
+    compressor.attack.value = 0.018;
+    compressor.release.value = 0.32;
+    delay.delayTime.value = 0.42;
+    feedback.gain.value = 0.42;
+    wet.gain.value = 0.32;
     delay.connect(feedback);
     feedback.connect(delay);
     delay.connect(wet);
-    wet.connect(compressor);
-    master.connect(compressor);
+    wet.connect(lowpass);
+    master.connect(lowpass);
+    lowpass.connect(compressor);
     compressor.connect(context.destination);
     contextRef.current = context;
     masterRef.current = master;
     delayRef.current = delay;
     feedbackRef.current = feedback;
 
-    voicesRef.current = components
-      .filter((component) => component.frequency !== 0)
-      .slice(0, 18)
-      .map((component, index) => {
+    voicesRef.current = createFourierVoicePlan(components, speed)
+      .map((voicePlan) => {
         const oscillator = context.createOscillator();
         const gain = context.createGain();
         const panner = context.createStereoPanner();
-        oscillator.type = index % 4 === 0 ? "triangle" : index % 4 === 1 ? "sine" : "sawtooth";
-        oscillator.frequency.value = 74 + Math.abs(component.frequency) * 31 * speed;
-        oscillator.detune.value = (component.phase / Math.PI) * 18;
-        gain.gain.value = Math.min(0.026, component.amplitude / 13000);
-        panner.pan.value = Math.sin(component.phase + index) * 0.72;
+        const send = context.createGain();
+        oscillator.type = voicePlan.type;
+        oscillator.frequency.value = voicePlan.frequency;
+        oscillator.detune.value = voicePlan.detune;
+        gain.gain.value = voicePlan.gain;
+        panner.pan.value = voicePlan.pan;
+        send.gain.value = voicePlan.delaySend;
         oscillator.connect(gain);
         gain.connect(panner);
         panner.connect(master);
-        panner.connect(delay);
+        panner.connect(send);
+        send.connect(delay);
         oscillator.start();
-        return { oscillator, gain, panner };
+        return { oscillator, gain, panner, send };
       });
 
     window.__FOURIER_SOUND_STATE__ = {
@@ -99,7 +112,7 @@ export function useFourierSound(
     }
 
     master.gain.cancelScheduledValues(context.currentTime);
-    master.gain.linearRampToValueAtTime(playing ? 0.12 : 0, context.currentTime + 0.18);
+    master.gain.linearRampToValueAtTime(playing ? 0.095 : 0, context.currentTime + 0.32);
     window.__FOURIER_SOUND_STATE__ = {
       active: Boolean(playing),
       voices: voicesRef.current.length,

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import type { FourierComponent } from "@/utils/dft";
 import type { Point } from "@/utils/complex";
+import { cameraOrbitAtTime, depthLiftAtIndex } from "@/utils/threeMotion";
 
 type ThreeEpicycleViewProps = {
   sourcePath: Point[];
@@ -83,20 +84,22 @@ export function ThreeEpicycleView({
     host.appendChild(renderer.domElement);
     onCanvasReady(renderer.domElement);
 
+    const stageGroup = new THREE.Group();
     const epicycleGroup = new THREE.Group();
     const trailGroup = new THREE.Group();
-    scene.add(epicycleGroup, trailGroup);
+    scene.add(stageGroup);
+    stageGroup.add(epicycleGroup, trailGroup);
 
     const sourcePoints = sourcePath.map(
       (point, index) =>
         new THREE.Vector3(
           point.x * zoom,
           -point.y * zoom,
-          Math.sin((index / Math.max(1, sourcePath.length)) * TAU) * 64 * zoom,
+          depthLiftAtIndex(index, sourcePath.length, zoom),
         ),
     );
     const sourceLine = makeLine(sourcePoints, 0x00f0ff, 0.82);
-    scene.add(sourceLine);
+    stageGroup.add(sourceLine);
 
     const starField = new THREE.Points(
       new THREE.BufferGeometry().setFromPoints(
@@ -110,7 +113,7 @@ export function ThreeEpicycleView({
       new THREE.SphereGeometry(7, 24, 16),
       new THREE.MeshBasicMaterial({ color: 0xffffff }),
     );
-    scene.add(endpoint);
+    stageGroup.add(endpoint);
 
     let frame = 0;
     let previous = performance.now();
@@ -155,7 +158,7 @@ export function ThreeEpicycleView({
         const vector = new THREE.Vector3(
           Math.cos(angle) * radius,
           -Math.sin(angle) * radius,
-          Math.sin(angle * 0.6 + component.frequency) * radius * 0.22,
+          Math.sin(angle * 0.85 + component.frequency * 0.38) * radius * 0.38,
         );
         const next = center.clone().add(vector);
 
@@ -181,8 +184,13 @@ export function ThreeEpicycleView({
       }
 
       endpoint.position.copy(center);
-      camera.position.x = Math.sin(time * 0.18) * 220;
-      camera.position.y = Math.cos(time * 0.14) * 120;
+      stageGroup.rotation.x = Math.cos(time * 0.65) * 0.18;
+      stageGroup.rotation.y = Math.sin(time * 0.9) * 0.42;
+      stageGroup.rotation.z = Math.sin(time * 0.28) * 0.08;
+      starField.rotation.y = time * 0.08;
+      starField.rotation.x = Math.sin(time * 0.16) * 0.06;
+      const cameraOrbit = cameraOrbitAtTime(time, zoom);
+      camera.position.set(cameraOrbit.x, cameraOrbit.y, cameraOrbit.z);
       camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);
       frame = requestAnimationFrame(render);

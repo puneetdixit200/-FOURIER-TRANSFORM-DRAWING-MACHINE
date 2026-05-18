@@ -78,7 +78,7 @@ function FourierStudioClient() {
   const [showCircles, setShowCircles] = useState(true);
   const [showLines, setShowLines] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(false);
-  const [teachMode, setTeachMode] = useState(false);
+  const [teachMode, setTeachMode] = useState(true);
   const [speed, setSpeed] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [epicycleCount, setEpicycleCount] = useState(160);

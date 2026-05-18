@@ -29,6 +29,9 @@ test("home page renders canvas UI and switches core modes", async ({ page }) => 
   await expect(page.getByText("Webcam trace")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Battle" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Two Together" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Teach" })).toHaveClass(/is-on/);
+  await expect(page.getByText("What the circles mean")).toBeVisible();
+  await expect(page.getByText("Visible epicycles")).toBeVisible();
 
   const panelBefore = await page.locator(".control-panel").boundingBox();
   expect(panelBefore?.height).toBeGreaterThan(680);
@@ -64,31 +67,34 @@ test("home page renders canvas UI and switches core modes", async ({ page }) => 
   await page.getByRole("button", { name: "3D" }).click();
   await expect(page.locator(".three-stage canvas")).toBeVisible();
   await page.waitForTimeout(500);
-  const litPixels = await page.locator(".three-stage canvas").evaluate((canvas) => {
+  const readCanvasEnergy = async () =>
+    page.locator(".three-stage canvas").evaluate((canvas) => {
     const target = canvas as HTMLCanvasElement;
     const gl = target.getContext("webgl2") ?? target.getContext("webgl");
     if (!gl) {
-      return 0;
+      return { lit: 0, weighted: 0 };
     }
     const width = target.width;
     const height = target.height;
     const pixels = new Uint8Array(width * height * 4);
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
     let lit = 0;
+    let weighted = 0;
     for (let index = 0; index < pixels.length; index += 4) {
       if (pixels[index] + pixels[index + 1] + pixels[index + 2] > 10) {
         lit += 1;
+        weighted += ((index / 4) % width) * (pixels[index] + pixels[index + 1] + pixels[index + 2]);
       }
     }
-    return lit;
+    return { lit, weighted };
   });
-  expect(litPixels).toBeGreaterThan(100);
+  const firstFrame = await readCanvasEnergy();
+  await page.waitForTimeout(1200);
+  const secondFrame = await readCanvasEnergy();
+  expect(firstFrame.lit).toBeGreaterThan(100);
+  expect(Math.abs(secondFrame.weighted - firstFrame.weighted)).toBeGreaterThan(200000);
 
   await page.getByRole("button", { name: "Epicycles" }).click();
-  await page.getByRole("button", { name: "Teach" }).click();
-  await expect(page.getByRole("button", { name: "Teach" })).toHaveClass(/is-on/);
-  await expect(page.getByText("What the circles mean")).toBeVisible();
-  await expect(page.getByText("Visible epicycles")).toBeVisible();
   await page.getByRole("button", { name: "Sound" }).click();
   await expect(page.getByRole("button", { name: "Sound" })).toHaveClass(/is-on/);
   await expect
@@ -98,7 +104,7 @@ test("home page renders canvas UI and switches core modes", async ({ page }) => 
         voices: window.__FOURIER_SOUND_STATE__?.voices ?? 0,
       })),
     )
-    .toMatchObject({ active: true, voices: 18 });
+    .toMatchObject({ active: true, voices: 24 });
 
   await page.getByLabel("Recording duration").fill("2");
   await expect(page.getByText("Duration").locator("..")).toContainText("2s");
