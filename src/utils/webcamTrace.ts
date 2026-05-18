@@ -9,6 +9,57 @@ const percentile = (values: number[], ratio: number) => {
   return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * ratio))];
 };
 
+type EdgePoint = Point & { magnitude: number };
+
+function largestConnectedComponent(points: EdgePoint[], width: number) {
+  if (points.length === 0) {
+    return [];
+  }
+
+  const pointByIndex = new Map<number, EdgePoint>();
+  for (const point of points) {
+    pointByIndex.set(point.y * width + point.x, point);
+  }
+
+  const visited = new Set<number>();
+  let largest: EdgePoint[] = [];
+  const neighborOffsets = [-width - 1, -width, -width + 1, -1, 1, width - 1, width, width + 1];
+
+  for (const point of points) {
+    const startIndex = point.y * width + point.x;
+    if (visited.has(startIndex)) {
+      continue;
+    }
+
+    const stack = [startIndex];
+    const component: EdgePoint[] = [];
+    visited.add(startIndex);
+
+    while (stack.length > 0) {
+      const currentIndex = stack.pop()!;
+      const current = pointByIndex.get(currentIndex);
+      if (!current) {
+        continue;
+      }
+      component.push(current);
+
+      for (const offset of neighborOffsets) {
+        const nextIndex = currentIndex + offset;
+        if (!visited.has(nextIndex) && pointByIndex.has(nextIndex)) {
+          visited.add(nextIndex);
+          stack.push(nextIndex);
+        }
+      }
+    }
+
+    if (component.length > largest.length) {
+      largest = component;
+    }
+  }
+
+  return largest;
+}
+
 export function extractEdgeTrace(
   imageData: ImageData,
   maxWidth: number,
@@ -23,7 +74,7 @@ export function extractEdgeTrace(
     gray[index] = data[offset] * 0.299 + data[offset + 1] * 0.587 + data[offset + 2] * 0.114;
   }
 
-  const gradients: Array<Point & { magnitude: number }> = [];
+  const gradients: EdgePoint[] = [];
 
   for (let y = 1; y < height - 1; y += 1) {
     for (let x = 1; x < width - 1; x += 1) {
@@ -60,10 +111,13 @@ export function extractEdgeTrace(
     return [];
   }
 
+  const primaryEdges = largestConnectedComponent(edges, width);
+  const selectedEdges = primaryEdges.length >= 12 ? primaryEdges : edges;
+
   let total = 0;
   let cx = 0;
   let cy = 0;
-  for (const point of edges) {
+  for (const point of selectedEdges) {
     cx += point.x * point.magnitude;
     cy += point.y * point.magnitude;
     total += point.magnitude;
@@ -71,7 +125,7 @@ export function extractEdgeTrace(
   cx /= total;
   cy /= total;
 
-  const sorted = edges
+  const sorted = selectedEdges
     .sort((a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx))
     .filter((_, index) => index % Math.max(1, Math.floor(edges.length / Math.max(1, targetCount * 1.8))) === 0);
 

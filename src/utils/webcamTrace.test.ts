@@ -26,5 +26,25 @@ describe("extractEdgeTrace", () => {
     expect(Math.max(...trace.map((point) => point.x)) - Math.min(...trace.map((point) => point.x))).toBeGreaterThan(220);
     expect(Math.max(...trace.map((point) => point.y)) - Math.min(...trace.map((point) => point.y))).toBeGreaterThan(150);
   });
-});
 
+  it("prefers the largest connected outline over small high-contrast clutter", () => {
+    const imageData = makeImageData(120, 90, (x, y) => {
+      if (x > 31 && x < 90 && y > 24 && y < 68) {
+        return 126;
+      }
+      if (x > 4 && x < 18 && y > 5 && y < 19) {
+        return 245;
+      }
+      return 96;
+    });
+
+    const trace = extractEdgeTrace(imageData, 360, 260, 220);
+    const centerX = trace.reduce((sum, point) => sum + point.x, 0) / trace.length;
+    const centerY = trace.reduce((sum, point) => sum + point.y, 0) / trace.length;
+
+    expect(trace.length).toBe(220);
+    expect(Math.abs(centerX)).toBeLessThan(35);
+    expect(Math.abs(centerY)).toBeLessThan(35);
+    expect(trace.filter((point) => point.x < -130 && point.y < -80)).toHaveLength(0);
+  });
+});

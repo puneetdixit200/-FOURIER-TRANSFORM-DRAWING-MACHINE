@@ -36,7 +36,9 @@ const colors = {
   raw: "#00f0ff",
   trail: "#ff2d7b",
   trailB: "#7cff6b",
-  gold: "rgba(255, 200, 50, 0.36)",
+  radius: "rgba(255, 226, 92, 0.78)",
+  circle: "rgba(122, 220, 255, 0.72)",
+  circleFill: "rgba(0, 240, 255, 0.045)",
 };
 
 function drawSmoothPath(
@@ -146,20 +148,26 @@ function drawEpicycleChain(
     if (options.showCircles && component.amplitude > 0.4) {
       ctx.beginPath();
       ctx.arc(center.x, center.y, component.amplitude, 0, TAU);
-      ctx.fillStyle = "rgba(255,255,255,0.025)";
-      ctx.strokeStyle = options.circleColor ?? "rgba(255,255,255,0.22)";
-      ctx.lineWidth = 1;
+      ctx.fillStyle = colors.circleFill;
+      ctx.strokeStyle = options.circleColor ?? colors.circle;
+      ctx.lineWidth = 1.35;
+      ctx.shadowColor = options.circleColor ?? colors.circle;
+      ctx.shadowBlur = 5;
       ctx.fill();
       ctx.stroke();
+      ctx.shadowBlur = 0;
     }
 
     if (options.showLines) {
       ctx.beginPath();
       ctx.moveTo(center.x, center.y);
       ctx.lineTo(next.x, next.y);
-      ctx.strokeStyle = options.lineColor ?? colors.gold;
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = options.lineColor ?? colors.radius;
+      ctx.lineWidth = 1.6;
+      ctx.shadowColor = options.lineColor ?? colors.radius;
+      ctx.shadowBlur = 6;
       ctx.stroke();
+      ctx.shadowBlur = 0;
     }
 
     center = next;
@@ -286,15 +294,15 @@ export function DrawingCanvas({
         const xTip = drawEpicycleChain(ctx, xComponents, topOrigin, timeRef.current, epicycleCount, {
           showCircles,
           showLines,
-          circleColor: "rgba(0,240,255,0.34)",
-          lineColor: "rgba(0,240,255,0.35)",
+          circleColor: "rgba(71, 211, 255, 0.72)",
+          lineColor: "rgba(255, 232, 92, 0.76)",
         });
         const yTip = drawEpicycleChain(ctx, yComponents, leftOrigin, timeRef.current, epicycleCount, {
           showCircles,
           showLines,
           rotate: true,
-          circleColor: "rgba(255,45,123,0.34)",
-          lineColor: "rgba(255,45,123,0.32)",
+          circleColor: "rgba(255, 111, 170, 0.72)",
+          lineColor: "rgba(124, 255, 107, 0.76)",
         });
         const projection = { x: xTip.x, y: yTip.y };
         ctx.setLineDash([5, 8]);

@@ -13,6 +13,8 @@ test("home page renders canvas UI and switches core modes", async ({ page }) => 
   await expect(page.locator("canvas")).toBeVisible();
   await expect(page.getByRole("button", { exact: true, name: "Draw" })).toBeVisible();
   await expect(page.getByText("Math fact")).toBeVisible();
+  const factBox = await page.locator(".fact-box").boundingBox();
+  expect(factBox?.height).toBeGreaterThan(90);
   await expect(page.getByRole("link", { name: "Made by puneetdixit200" })).toHaveAttribute(
     "href",
     "https://github.com/puneetdixit200",
@@ -55,11 +57,13 @@ test("home page renders canvas UI and switches core modes", async ({ page }) => 
     }
     return lit;
   });
-  expect(litPixels).toBeGreaterThan(5);
+  expect(litPixels).toBeGreaterThan(100);
 
   await page.getByRole("button", { name: "Epicycles" }).click();
   await page.getByRole("button", { name: "Teach" }).click();
   await expect(page.getByRole("button", { name: "Teach" })).toHaveClass(/is-on/);
+  await expect(page.getByText("What the circles mean")).toBeVisible();
+  await expect(page.getByText("Visible epicycles")).toBeVisible();
   await page.getByRole("button", { name: "Sound" }).click();
   await expect(page.getByRole("button", { name: "Sound" })).toHaveClass(/is-on/);
   await expect

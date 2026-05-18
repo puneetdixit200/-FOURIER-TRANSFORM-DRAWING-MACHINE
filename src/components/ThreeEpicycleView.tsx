@@ -24,17 +24,18 @@ function makeLine(points: THREE.Vector3[], color: number, opacity = 1) {
     color,
     transparent: opacity < 1,
     opacity,
+    depthTest: false,
   });
   return new THREE.Line(geometry, material);
 }
 
-function makeCircle(radius: number, center: THREE.Vector3, color: number) {
+function makeCircle(radius: number, center: THREE.Vector3, color: number, opacity = 0.72) {
   const points: THREE.Vector3[] = [];
   for (let index = 0; index <= 72; index += 1) {
     const angle = (TAU * index) / 72;
     points.push(new THREE.Vector3(center.x + Math.cos(angle) * radius, center.y + Math.sin(angle) * radius, center.z));
   }
-  return makeLine(points, color, 0.2);
+  return makeLine(points, color, opacity);
 }
 
 function disposeObject(object: THREE.Object3D) {
@@ -71,12 +72,12 @@ export function ThreeEpicycleView({
     }
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x090910, 0.0018);
-    const camera = new THREE.PerspectiveCamera(55, 1, 1, 3000);
-    camera.position.set(0, 0, 760);
+    scene.fog = new THREE.FogExp2(0x05050a, 0.0009);
+    const camera = new THREE.PerspectiveCamera(48, 1, 1, 3000);
+    camera.position.set(0, 0, 620);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.setClearColor(0x000000, 0);
+    renderer.setClearColor(0x05050a, 1);
     host.appendChild(renderer.domElement);
     onCanvasReady(renderer.domElement);
 
@@ -88,16 +89,22 @@ export function ThreeEpicycleView({
       (point, index) =>
         new THREE.Vector3(point.x, -point.y, Math.sin((index / Math.max(1, sourcePath.length)) * TAU) * 64),
     );
-    const sourceLine = makeLine(sourcePoints, 0x00f0ff, 0.28);
+    const sourceLine = makeLine(sourcePoints, 0x00f0ff, 0.82);
     scene.add(sourceLine);
 
     const starField = new THREE.Points(
       new THREE.BufferGeometry().setFromPoints(
         Array.from({ length: 320 }, () => new THREE.Vector3((Math.random() - 0.5) * 1800, (Math.random() - 0.5) * 1200, -Math.random() * 1000)),
       ),
-      new THREE.PointsMaterial({ color: 0xffffff, size: 1.4, transparent: true, opacity: 0.26 }),
+      new THREE.PointsMaterial({ color: 0x89eaff, size: 1.8, transparent: true, opacity: 0.45 }),
     );
     scene.add(starField);
+
+    const endpoint = new THREE.Mesh(
+      new THREE.SphereGeometry(7, 24, 16),
+      new THREE.MeshBasicMaterial({ color: 0xffffff }),
+    );
+    scene.add(endpoint);
 
     let frame = 0;
     let previous = performance.now();
@@ -146,10 +153,10 @@ export function ThreeEpicycleView({
         const next = center.clone().add(vector);
 
         if (showCircles && component.amplitude > 0.4) {
-          epicycleGroup.add(makeCircle(component.amplitude, center, 0xffffff));
+          epicycleGroup.add(makeCircle(component.amplitude, center, 0x79dcff, 0.7));
         }
         if (showLines) {
-          epicycleGroup.add(makeLine([center, next], 0xffc832, 0.42));
+          epicycleGroup.add(makeLine([center, next], 0xffe25c, 0.95));
         }
         center = next;
       }
@@ -163,9 +170,10 @@ export function ThreeEpicycleView({
         disposeObject(child);
       });
       if (trail.length > 1) {
-        trailGroup.add(makeLine(trail, 0xff2d7b, 0.96));
+        trailGroup.add(makeLine(trail, 0xff2d7b, 1));
       }
 
+      endpoint.position.copy(center);
       camera.position.x = Math.sin(time * 0.18) * 220;
       camera.position.y = Math.cos(time * 0.14) * 120;
       camera.lookAt(0, 0, 0);
@@ -187,4 +195,3 @@ export function ThreeEpicycleView({
 
   return <div className="three-stage" ref={hostRef} />;
 }
-

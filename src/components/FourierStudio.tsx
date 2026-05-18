@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ControlPanel, type RenderMode } from "./ControlPanel";
 import { DrawingCanvas } from "./DrawingCanvas";
 import { drawingDifficulty, prepareDrawing, type PreparedDrawing } from "./FourierEngine";
+import { TeachPanel } from "./TeachPanel";
 import { ThreeEpicycleView } from "./ThreeEpicycleView";
 import { useFourierSound } from "@/hooks/useFourierSound";
 import type { Point } from "@/utils/complex";
@@ -235,7 +236,7 @@ function FourierStudioClient() {
     );
     if (trace.length > 0) {
       loadPoints(trace, "Webcam trace", { fit: false });
-      setWebcamStatus(`Captured ${trace.length} edge points.`);
+      setWebcamStatus(`Captured the largest connected outline: ${trace.length} points.`);
     } else {
       setWebcamStatus("No clear outline found. Try more light or move closer.");
     }
@@ -375,7 +376,7 @@ function FourierStudioClient() {
           showLines={showLines}
           sourcePath={drawing.points}
           speed={speed}
-          teachMode={teachMode}
+          teachMode={false}
         />
       )}
 
@@ -430,6 +431,19 @@ function FourierStudioClient() {
       />
 
       <video className={webcamActive ? "webcam-video is-active" : "webcam-video"} muted playsInline ref={videoRef} />
+      {webcamActive ? (
+        <div className="webcam-guide">
+          <span>Trace preview</span>
+          <b>Keep one bright outline inside the frame</b>
+        </div>
+      ) : null}
+      <TeachPanel
+        components={drawing.components}
+        epicycleCount={safeEpicycleCount}
+        maxEpicycles={maxEpicycles}
+        mode={mode}
+        visible={teachMode}
+      />
       <div className="fact-box">
         <span>Math fact</span>
         <p>{fact}</p>
