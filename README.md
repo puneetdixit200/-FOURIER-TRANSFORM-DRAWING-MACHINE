@@ -23,6 +23,7 @@ Live app: https://fourier-transform-drawing-machine.vercel.app
 - Fourier amplitude spectrum visualization.
 - GIF and MP4/WebM canvas export with user-selected duration.
 - Draggable and resizable glass dashboard.
+- Browser tab branding with an epicycle favicon, `FTD MACHINE` title, and `HI` away-state title.
 - Rotating math fact board and embedded maker link: Made with ❤️ by PUNEET DIXIT.
 
 ## Tech Stack
@@ -54,7 +55,7 @@ npm run build
 npm run test:e2e -- tests/smoke.spec.ts --reporter=list --workers=1
 ```
 
-The smoke test verifies the main canvas UI, default Teach mode, dynamic epicycle metrics, zoom controls, dashboard drag/resize, 3D canvas rendering, sound activation, and GIF export.
+The smoke test verifies the main canvas UI, tab title/favicon behavior, default Teach mode, dynamic epicycle metrics, zoom controls, dashboard drag/resize, 3D canvas rendering, sound activation, and GIF export.
 
 ## Deployment
 

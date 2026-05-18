@@ -9,6 +9,20 @@ test("home page renders canvas UI and switches core modes", async ({ page }) => 
   });
 
   await page.goto("/", { waitUntil: "networkidle" });
+  await expect(page).toHaveTitle("FTD MACHINE");
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", "/icon.svg");
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect(page).toHaveTitle("HI");
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => false });
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect(page).toHaveTitle("FTD MACHINE");
   await expect(page.getByRole("heading", { name: "Pi preset" })).toBeVisible();
   await expect(page.locator("canvas")).toBeVisible();
   await expect(page.getByRole("button", { exact: true, name: "Draw" })).toBeVisible();

@@ -18,8 +18,11 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Fourier Transform Drawing Machine",
+  title: "FTD MACHINE",
   description: "Draw anything and watch a Discrete Fourier Transform rebuild it with epicycles.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export const viewport: Viewport = {
@@ -40,4 +43,3 @@ export default function RootLayout({
     </html>
   );
 }
-

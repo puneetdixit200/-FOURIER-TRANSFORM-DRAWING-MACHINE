@@ -28,6 +28,9 @@ const emptyDrawing: PreparedDrawing = {
   maxEpicycles: 1,
 };
 
+const ACTIVE_DOCUMENT_TITLE = "FTD MACHINE";
+const HIDDEN_DOCUMENT_TITLE = "HI";
+
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -89,6 +92,19 @@ function FourierStudioClient() {
   const [fact, setFact] = useState(() => factForElapsedTime(0));
 
   useFourierSound(soundEnabled, playing, drawing.components, speed);
+
+  useEffect(() => {
+    const syncTitle = () => {
+      document.title = document.hidden ? HIDDEN_DOCUMENT_TITLE : ACTIVE_DOCUMENT_TITLE;
+    };
+
+    syncTitle();
+    document.addEventListener("visibilitychange", syncTitle);
+    return () => {
+      document.removeEventListener("visibilitychange", syncTitle);
+      document.title = ACTIVE_DOCUMENT_TITLE;
+    };
+  }, []);
 
   useEffect(() => {
     const updateViewport = () => {
