@@ -94,7 +94,7 @@ button {
   position: absolute;
   top: 18px;
   width: min(390px, calc(100vw - 28px));
-  z-index: 4;
+  z-index: 6;
 }
 
 .control-panel::before {
@@ -499,6 +499,14 @@ input[type="range"] {
   font-weight: 800;
 }
 
+.corner-brand small {
+  align-items: center;
+  color: rgba(244, 251, 255, 0.72);
+  display: inline-flex;
+  font-size: 11px;
+  gap: 4px;
+}
+
 .corner-brand span {
   color: rgba(244, 251, 255, 0.62);
 }
@@ -664,6 +672,10 @@ input[type="range"] {
   }
 
   .corner-brand span {
+    display: none;
+  }
+
+  .corner-brand small {
     display: none;
   }
 }

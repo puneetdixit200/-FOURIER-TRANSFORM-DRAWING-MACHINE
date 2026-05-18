@@ -22,7 +22,7 @@ test("home page renders canvas UI and switches core modes", async ({ page }) => 
   await expect(page.getByText("Math fact")).toBeVisible();
   const factBox = await page.locator(".fact-box").boundingBox();
   expect(factBox?.height).toBeGreaterThan(90);
-  await expect(page.getByRole("link", { name: "GitHub puneetdixit200" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Made with love by PUNEET DIXIT GitHub" })).toHaveAttribute(
     "href",
     "https://github.com/puneetdixit200",
   );
@@ -32,6 +32,10 @@ test("home page renders canvas UI and switches core modes", async ({ page }) => 
   await expect(page.getByRole("button", { name: "Teach" })).toHaveClass(/is-on/);
   await expect(page.getByText("What the circles mean")).toBeVisible();
   await expect(page.getByText("Visible epicycles")).toBeVisible();
+  await expect(page.getByLabel("Visible epicycles metric").locator("b")).toHaveText("180");
+  await page.locator(".range-field").filter({ hasText: "Epicycles" }).locator("input").fill("96");
+  await expect(page.getByLabel("Visible epicycles metric").locator("b")).toHaveText("96");
+  await expect(page.getByLabel("Visible epicycles metric")).toContainText("19% of available detail");
 
   const panelBefore = await page.locator(".control-panel").boundingBox();
   expect(panelBefore?.height).toBeGreaterThan(680);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Code2 } from "lucide-react";
+import { Code2, Heart } from "lucide-react";
 import { ControlPanel, type RenderMode } from "./ControlPanel";
 import { DrawingCanvas } from "./DrawingCanvas";
 import { drawingDifficulty, prepareDrawing, type PreparedDrawing } from "./FourierEngine";
@@ -383,15 +383,19 @@ function FourierStudioClient() {
         <p>{fact}</p>
       </div>
       <a
-        aria-label="GitHub puneetdixit200"
+        aria-label="Made with love by PUNEET DIXIT GitHub"
         className="corner-brand"
         href="https://github.com/puneetdixit200"
         rel="noreferrer"
         target="_blank"
       >
-        <Code2 aria-hidden="true" size={18} />
-        <span>GitHub</span>
-        <b>puneetdixit200</b>
+        <Heart aria-hidden="true" size={16} />
+        <span>Made with love by</span>
+        <b>PUNEET DIXIT</b>
+        <small>
+          <Code2 aria-hidden="true" size={14} />
+          GitHub
+        </small>
       </a>
     </main>
   );

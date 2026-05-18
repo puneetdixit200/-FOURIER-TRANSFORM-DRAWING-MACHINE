@@ -33,7 +33,7 @@ export function TeachPanel({
         Each circle is one frequency, and the final tip traces the reconstructed drawing.
       </p>
       <div className="teach-grid">
-        <div>
+        <div aria-label="Visible epicycles metric">
           <span>Visible epicycles</span>
           <b>{epicycleCount}</b>
           <small>{detailPercent}% of available detail</small>
@@ -62,4 +62,3 @@ export function TeachPanel({
     </aside>
   );
 }
-
